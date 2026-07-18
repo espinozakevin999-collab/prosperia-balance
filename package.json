@@ -1,0 +1,21 @@
+{
+  "name": "prosperia-balance",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "test": "node --test"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.52.1"
+  },
+  "devDependencies": {
+    "vite": "^7.0.5"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

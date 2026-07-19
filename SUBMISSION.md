@@ -24,7 +24,7 @@ Codex aceleró la transformación del prototipo en una aplicación funcional: ar
 
 ## Pendientes antes de enviar
 
-- [ ] Activar y verificar GPT-5.6 Terra en producción.
+- [x] Activar y verificar GPT-5.6 Terra en producción.
 - [ ] Grabar y publicar video de menos de 3 minutos.
 - [ ] Agregar portada y capturas 3:2 a Devpost.
 - [ ] Obtener el Session ID de feedback de Work/Codex.

@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import handler, { buildSafeSummary } from '../api/analyze.js';
+import handler, { buildSafeSummary, cleanAdvice } from '../api/analyze.js';
 
 function responseRecorder() {
   return {
@@ -40,4 +40,8 @@ test('safe AI summary separates business and personal expenses', () => {
   assert.equal(summary.expense, 1610);
   assert.equal(summary.businessExpense, 1410);
   assert.equal(summary.personal, 200);
+});
+
+test('AI advice is returned as plain text', () => {
+  assert.equal(cleanAdvice('**Acción:** revisa `Insumos`.'), 'Acción: revisa Insumos.');
 });

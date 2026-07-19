@@ -33,6 +33,19 @@ function finiteNumber(value, minimum = 0, maximum = 1_000_000_000_000) {
   return Number.isFinite(number) ? Math.min(maximum, Math.max(minimum, number)) : 0;
 }
 
+export function buildSafeSummary(data) {
+  return {
+    month: /^\d{4}-(0[1-9]|1[0-2])$/.test(String(data.month || '')) ? String(data.month) : '',
+    income: finiteNumber(data.income),
+    expense: finiteNumber(data.expense),
+    businessExpense: finiteNumber(data.businessExpense),
+    personal: finiteNumber(data.personal),
+    balance: finiteNumber(data.balance, -1_000_000_000_000),
+    categories: Object.fromEntries(Object.entries(data.categories && !Array.isArray(data.categories) ? data.categories : {}).slice(0, 12).map(([name, value]) => [String(name).slice(0, 60), finiteNumber(value)])),
+    transactionCount: Math.round(finiteNumber(data.transactionCount, 0, 1_000_000)),
+  };
+}
+
 async function authenticatedUser(request) {
   const authorization = String(request.headers.authorization || '');
   if (!authorization.startsWith('Bearer ')) return null;
@@ -66,15 +79,7 @@ export default async function handler(request, response) {
   if (!user?.id) return response.status(401).json({ error: 'Entra a tu cuenta para usar el análisis con IA.' });
   if (!allowRequest(`user:${user.id}:${ip}`)) return response.status(429).json({ error: 'Espera un minuto antes de pedir otro análisis.' });
 
-  const safeSummary = {
-    month: /^\d{4}-(0[1-9]|1[0-2])$/.test(String(data.month || '')) ? String(data.month) : '',
-    income: finiteNumber(data.income),
-    expense: finiteNumber(data.expense),
-    personal: finiteNumber(data.personal),
-    balance: finiteNumber(data.balance, -1_000_000_000_000),
-    categories: Object.fromEntries(Object.entries(data.categories && !Array.isArray(data.categories) ? data.categories : {}).slice(0, 12).map(([name, value]) => [String(name).slice(0, 60), finiteNumber(value)])),
-    transactionCount: Math.round(finiteNumber(data.transactionCount, 0, 1_000_000)),
-  };
+  const safeSummary = buildSafeSummary(data);
 
   try {
     const openaiResponse = await fetch('https://api.openai.com/v1/responses', {
@@ -87,7 +92,7 @@ export default async function handler(request, response) {
         input: [
           {
             role: 'developer',
-            content: 'Eres Prospería, una guía financiera para microemprendimientos. Responde en español mexicano cotidiano, con máximo 65 palabras y sin tecnicismos. Da una sola observación y una acción concreta. No juzgues, no prometas resultados y no inventes cifras. Evita consejos fiscales, legales o de inversión.',
+            content: 'Eres Prospería, una guía financiera para microemprendimientos. Responde en español mexicano cotidiano, con máximo 65 palabras y sin tecnicismos. Da una sola observación y una acción concreta. No juzgues, no prometas resultados y no inventes cifras. Evita consejos fiscales, legales o de inversión. expense es el gasto total e incluye personal; personal es un subconjunto de expense; businessExpense excluye personal. Nunca sumes personal a expense ni lo cuentes dos veces.',
           },
           { role: 'user', content: `Explica este resumen de forma sencilla: ${JSON.stringify(safeSummary)}` },
         ],

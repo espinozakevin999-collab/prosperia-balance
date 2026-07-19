@@ -1,6 +1,7 @@
 import './styles.css';
 import { healthScore, localInsights, money, monthKey, summarize } from './lib/finance.js';
 import { parseCsv, transactionsToCsv } from './lib/csv.js';
+import { mergeCloudTransactions } from './lib/sync.js';
 import {
   cloudConfigured,
   deleteAllCloudData,
@@ -16,6 +17,7 @@ import {
 } from './lib/cloud.js';
 
 const STORAGE_KEY = 'prosperia:v3';
+const MAX_CSV_BYTES = 2 * 1024 * 1024;
 const today = new Date().toISOString().slice(0, 10);
 const currentMonth = monthKey();
 const dateInCurrentMonth = (day) => `${currentMonth}-${String(day).padStart(2, '0')}`;
@@ -476,12 +478,9 @@ async function syncFromCloud() {
     const userId = state.session.user.id;
     const remote = await loadCloudData(userId);
     const localReal = state.transactions.filter((item) => !String(item.id).startsWith('demo-'));
-    if (!remote.transactions.length && localReal.length) {
-      await saveManyCloudTransactions(localReal, userId);
-      state.transactions = localReal;
-    } else {
-      state.transactions = remote.transactions;
-    }
+    const { merged, pendingUpload } = mergeCloudTransactions(localReal, remote.transactions);
+    if (pendingUpload.length) await saveManyCloudTransactions(pendingUpload, userId);
+    state.transactions = merged;
     state.budget = remote.budget || state.budget;
     state.demo = false; persist(); toast('Tus datos ya están sincronizados');
   } catch (error) { showError(error); }
@@ -508,6 +507,7 @@ async function importCsv(event) {
   const file = event.target.files?.[0];
   event.target.value = '';
   if (!file) return;
+  if (file.size > MAX_CSV_BYTES) return toast('El archivo es demasiado grande. Usa un CSV menor de 2 MB.');
   try {
     const imported = parseCsv(await file.text());
     if (!imported.length) return toast('No encontramos movimientos válidos en ese archivo.');
@@ -522,8 +522,10 @@ async function requestAiAnalysis() {
   if (button) { button.disabled = true; button.textContent = 'Analizando…'; }
   try {
     const summary = currentSummary();
+    const headers = { 'content-type': 'application/json' };
+    if (state.session?.access_token) headers.authorization = `Bearer ${state.session.access_token}`;
     const response = await fetch('/api/analyze', {
-      method: 'POST', headers: { 'content-type': 'application/json' },
+      method: 'POST', headers,
       body: JSON.stringify({
         month: state.selectedMonth,
         income: summary.income,

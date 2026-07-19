@@ -530,6 +530,7 @@ async function requestAiAnalysis() {
         month: state.selectedMonth,
         income: summary.income,
         expense: summary.expense,
+        businessExpense: summary.businessExpense,
         personal: summary.personal,
         balance: summary.balance,
         categories: summary.categories,

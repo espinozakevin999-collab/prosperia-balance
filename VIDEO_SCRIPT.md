@@ -4,7 +4,7 @@
 
 - Usar la aplicación en una ventana limpia y con zoom de 100 %.
 - Tener preparados dos movimientos de ejemplo: una venta de $500 y un gasto de insumos de $120.
-- Iniciar sesión para mostrar la recomendación con GPT-5.6 cuando ya esté activa.
+- Iniciar sesión antes de grabar el segmento de GPT-5.6 y comprobar una vez que **Mejorar con IA** responde correctamente.
 - Grabar a 1080p y comprobar que el cursor y el texto se vean con claridad.
 
 ## Guion
@@ -51,7 +51,7 @@
 
 ### 1:50–2:15 — GPT-5.6
 
-**Pantalla:** abrir **Análisis** y pulsar **Mejorar con IA**; mostrar una respuesta real de GPT-5.6 Terra.
+**Pantalla:** con la sesión ya iniciada, abrir **Análisis**, pulsar **Mejorar con IA** y mostrar una respuesta real de GPT-5.6 Terra.
 
 **Voz:**
 

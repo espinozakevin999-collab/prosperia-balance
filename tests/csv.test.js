@@ -16,3 +16,15 @@ test('CSV import accepts common Spanish headers', () => {
   assert.equal(parsed[0].type, 'income');
   assert.equal(parsed[0].amount, 500);
 });
+
+test('CSV export neutralizes spreadsheet formulas', () => {
+  const source = [{
+    date: '2026-07-18', type: 'expense', amount: 10,
+    description: '=HYPERLINK("https://example.com")', category: '+SUM(A1:A2)',
+    personal: false, notes: '@malicious',
+  }];
+  const csv = transactionsToCsv(source);
+  assert.match(csv, /'=HYPERLINK/);
+  assert.match(csv, /'\+SUM/);
+  assert.match(csv, /'@malicious/);
+});

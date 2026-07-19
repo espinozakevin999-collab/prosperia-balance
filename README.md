@@ -57,9 +57,31 @@ La función `/api/analyze` está preparada para un despliegue compatible con fun
 ```env
 OPENAI_API_KEY=tu_clave_de_proyecto
 OPENAI_MODEL=gpt-5.6-terra
+SUPABASE_URL=https://TU-PROYECTO.supabase.co
+SUPABASE_PUBLISHABLE_KEY=TU_CLAVE_PUBLICABLE
 ```
 
-El navegador envía únicamente cifras agregadas y categorías. El correo, las notas y la descripción individual de cada movimiento no se envían al modelo. Si la API no está configurada o falla, la aplicación usa recomendaciones locales.
+El navegador envía únicamente cifras agregadas y categorías. El correo, las notas y la descripción individual de cada movimiento no se envían al modelo. La función valida la sesión de Supabase y limita solicitudes antes de consumir la API. Si la API no está configurada o falla, la aplicación usa recomendaciones locales.
+
+## OpenAI Build Week: Codex + GPT-5.6
+
+Prospería Balance fue desarrollada durante OpenAI Build Week con Codex como agente principal de ingeniería:
+
+- convirtió el prototipo inicial en una aplicación Vite funcional y adaptable;
+- implementó cálculos, persistencia local, autenticación, sincronización y políticas RLS;
+- agregó pruebas, documentación, revisión de accesibilidad y refuerzos de seguridad;
+- ayudó a mantener las decisiones de producto alineadas con lenguaje sencillo y teléfonos económicos.
+
+GPT-5.6 Terra se usa en [`api/analyze.js`](api/analyze.js) mediante Responses API para transformar un resumen financiero mínimo en una observación y una acción concreta en español cotidiano. Se eligió Terra por su equilibrio entre capacidad y costo. La IA es opcional: los cálculos y recomendaciones esenciales siguen funcionando localmente, sin cuenta ni API.
+
+Decisión clave: el modelo nunca recibe correo, notas libres ni movimientos individuales. Solo recibe totales del mes, número de movimientos y categorías agregadas; la solicitud usa `store: false`.
+
+## Probar como juez
+
+1. Abre la [demo pública](https://prosperia-balance.vercel.app/).
+2. Revisa los datos de ejemplo o pulsa **Empezar con mis datos**.
+3. Registra una venta y un gasto; el resumen se actualiza inmediatamente.
+4. La aplicación funciona sin credenciales. Para sincronización y análisis con IA, crea una cuenta mediante el enlace enviado por correo.
 
 ## Pruebas y compilación
 

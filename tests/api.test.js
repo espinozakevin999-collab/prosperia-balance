@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import handler from '../api/analyze.js';
+import handler, { buildSafeSummary } from '../api/analyze.js';
 
 function responseRecorder() {
   return {
@@ -30,4 +30,14 @@ test('analysis endpoint has a useful local fallback without an API key', async (
   assert.equal(response.statusCode, 200);
   assert.equal(response.body.ai, false);
   assert.match(response.body.advice, /dejó dinero/i);
+});
+
+test('safe AI summary separates business and personal expenses', () => {
+  const summary = buildSafeSummary({
+    income: 3250, expense: 1610, businessExpense: 1410, personal: 200, balance: 1640,
+  });
+
+  assert.equal(summary.expense, 1610);
+  assert.equal(summary.businessExpense, 1410);
+  assert.equal(summary.personal, 200);
 });

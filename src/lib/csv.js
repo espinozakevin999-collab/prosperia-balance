@@ -1,5 +1,7 @@
 function quote(value) {
-  const text = String(value ?? '');
+  const raw = String(value ?? '');
+  // Evita que Excel, Numbers o Sheets interpreten contenido importado como fórmula.
+  const text = /^[\t ]*[=+\-@]/.test(raw) ? `'${raw}` : raw;
   return /[",\n]/.test(text) ? `"${text.replaceAll('"', '""')}"` : text;
 }
 

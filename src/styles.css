@@ -71,9 +71,9 @@ h3 { margin: 0; font-size: 16px; }
 .button.secondary { background: var(--paper); color: var(--green-900); border-color: var(--line); }
 .button.soft { background: var(--green-100); color: var(--green-900); }
 .button.danger { background: var(--red-soft); color: var(--red); }
-.button.small { min-height: 38px; padding: 7px 11px; font-size: 14px; }
+.button.small { min-height: 44px; padding: 7px 11px; font-size: 14px; }
 .button.block { width: 100%; }
-.icon-button { min-width: 42px; min-height: 42px; padding: 8px; border: 1px solid var(--line); border-radius: 12px; background: var(--paper); }
+.icon-button { min-width: 44px; min-height: 44px; padding: 8px; border: 1px solid var(--line); border-radius: 12px; background: var(--paper); }
 
 .demo-banner { background: #fff6d9; border: 1px solid #ead28d; padding: 13px 16px; border-radius: 14px; display: flex; justify-content: space-between; align-items: center; gap: 14px; margin-bottom: 20px; }
 .demo-banner p { margin: 0; }
@@ -127,13 +127,13 @@ h3 { margin: 0; font-size: 16px; }
 .tx-meta { margin-top: 3px; color: var(--muted); font-size: 14px; }
 .tx-amount { font-family: 'Plus Jakarta Sans'; font-weight: 800; white-space: nowrap; }
 .tx-actions { display: flex; gap: 5px; }
-.tx-actions button { min-height: 36px; border: 0; background: transparent; border-radius: 9px; color: var(--muted); }
+.tx-actions button { min-width: 44px; min-height: 44px; border: 0; background: transparent; border-radius: 9px; color: var(--muted); }
 .tx-actions button:hover { background: #eeeae2; color: var(--ink); }
 
 .toolbar { display: grid; grid-template-columns: minmax(180px, 1fr) auto; gap: 12px; margin-bottom: 18px; }
 .search { min-height: 46px; border: 1px solid var(--line); background: #fff; border-radius: 13px; padding: 10px 14px; }
 .filter-pills { display: flex; flex-wrap: wrap; gap: 7px; }
-.pill { min-height: 42px; border: 1px solid var(--line); border-radius: 999px; background: var(--paper); color: var(--muted); padding: 8px 14px; font-weight: 700; }
+.pill { min-height: 44px; border: 1px solid var(--line); border-radius: 999px; background: var(--paper); color: var(--muted); padding: 8px 14px; font-weight: 700; }
 .pill.active { background: var(--green-800); color: #fff; border-color: var(--green-800); }
 
 .analysis-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
@@ -154,6 +154,7 @@ h3 { margin: 0; font-size: 16px; }
 .field textarea { min-height: 80px; resize: vertical; }
 .settings-actions { display: flex; flex-wrap: wrap; gap: 9px; margin-top: 16px; }
 .notice { padding: 13px 15px; border-radius: 13px; background: var(--blue-soft); color: #355669; line-height: 1.45; }
+.settings-help { margin-top: 10px; color: var(--muted); font-size: 14px; }
 
 .view { display: none; }
 .view.active { display: block; animation: appear .18s ease; }

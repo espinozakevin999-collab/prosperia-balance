@@ -12,7 +12,7 @@
 - Modo demostración y uso local sin cuenta.
 - Inicio de sesión por enlace de correo y sincronización con Supabase.
 - Análisis opcional con GPT-5.6, con respuesta local si la API no está disponible.
-- Diseño adaptable, navegación móvil e interfaz instalable como PWA.
+- Diseño adaptable, navegación móvil y acceso desde la pantalla de inicio en navegadores compatibles. La primera carga requiere conexión.
 
 ## Filosofía del producto
 

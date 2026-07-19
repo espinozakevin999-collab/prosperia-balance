@@ -28,24 +28,52 @@ function extractText(response) {
     .trim();
 }
 
+function finiteNumber(value, minimum = 0, maximum = 1_000_000_000_000) {
+  const number = Number(value);
+  return Number.isFinite(number) ? Math.min(maximum, Math.max(minimum, number)) : 0;
+}
+
+async function authenticatedUser(request) {
+  const authorization = String(request.headers.authorization || '');
+  if (!authorization.startsWith('Bearer ')) return null;
+
+  const url = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
+  const key = process.env.SUPABASE_PUBLISHABLE_KEY || process.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+  if (!url || !key) return null;
+
+  const authResponse = await fetch(`${url.replace(/\/$/, '')}/auth/v1/user`, {
+    headers: { authorization, apikey: key },
+  });
+  if (!authResponse.ok) return null;
+  return authResponse.json();
+}
+
 export default async function handler(request, response) {
   if (request.method !== 'POST') return response.status(405).json({ error: 'Método no permitido.' });
   const ip = String(request.headers['x-forwarded-for'] || request.socket?.remoteAddress || 'unknown').split(',')[0];
-  if (!allowRequest(ip)) return response.status(429).json({ error: 'Espera un minuto antes de pedir otro análisis.' });
 
   const data = request.body || {};
   if (JSON.stringify(data).length > 12_000) return response.status(413).json({ error: 'El resumen es demasiado grande.' });
   const fallback = fallbackAdvice(data);
   if (!process.env.OPENAI_API_KEY) return response.status(200).json({ advice: fallback, ai: false });
 
+  let user;
+  try {
+    user = await authenticatedUser(request);
+  } catch (error) {
+    console.error('Supabase authentication failed:', error.message);
+  }
+  if (!user?.id) return response.status(401).json({ error: 'Entra a tu cuenta para usar el análisis con IA.' });
+  if (!allowRequest(`user:${user.id}:${ip}`)) return response.status(429).json({ error: 'Espera un minuto antes de pedir otro análisis.' });
+
   const safeSummary = {
-    month: String(data.month || '').slice(0, 7),
-    income: Number(data.income || 0),
-    expense: Number(data.expense || 0),
-    personal: Number(data.personal || 0),
-    balance: Number(data.balance || 0),
-    categories: Object.fromEntries(Object.entries(data.categories || {}).slice(0, 12).map(([name, value]) => [String(name).slice(0, 60), Number(value || 0)])),
-    transactionCount: Number(data.transactionCount || 0),
+    month: /^\d{4}-(0[1-9]|1[0-2])$/.test(String(data.month || '')) ? String(data.month) : '',
+    income: finiteNumber(data.income),
+    expense: finiteNumber(data.expense),
+    personal: finiteNumber(data.personal),
+    balance: finiteNumber(data.balance, -1_000_000_000_000),
+    categories: Object.fromEntries(Object.entries(data.categories && !Array.isArray(data.categories) ? data.categories : {}).slice(0, 12).map(([name, value]) => [String(name).slice(0, 60), finiteNumber(value)])),
+    transactionCount: Math.round(finiteNumber(data.transactionCount, 0, 1_000_000)),
   };
 
   try {

@@ -18,6 +18,14 @@ import {
 
 const STORAGE_KEY = 'prosperia:v3';
 const MAX_CSV_BYTES = 2 * 1024 * 1024;
+const FOCUSABLE_SELECTOR = [
+  'a[href]',
+  'button:not([disabled])',
+  'input:not([disabled]):not([type="hidden"])',
+  'select:not([disabled])',
+  'textarea:not([disabled])',
+  '[tabindex]:not([tabindex="-1"])',
+].join(',');
 const today = new Date().toISOString().slice(0, 10);
 const currentMonth = monthKey();
 const dateInCurrentMonth = (day) => `${currentMonth}-${String(day).padStart(2, '0')}`;
@@ -57,6 +65,7 @@ const viewTitles = {
 };
 
 const app = document.querySelector('#app');
+let modalReturnFocus = null;
 app.innerHTML = shell();
 bindEvents();
 render();
@@ -84,7 +93,7 @@ function escapeHtml(value) {
 
 function shell() {
   const navigation = `
-    <button class="nav-button active" data-view="home"><span class="nav-icon" aria-hidden="true">⌂</span>Inicio</button>
+    <button class="nav-button active" data-view="home" aria-current="page"><span class="nav-icon" aria-hidden="true">⌂</span>Inicio</button>
     <button class="nav-button" data-view="movements"><span class="nav-icon" aria-hidden="true">☷</span>Movimientos</button>
     <button class="nav-button" data-view="analysis"><span class="nav-icon" aria-hidden="true">◔</span>Análisis</button>
     <button class="nav-button" data-view="settings"><span class="nav-icon" aria-hidden="true">⚙</span>Tu cuenta</button>`;
@@ -125,8 +134,8 @@ function shell() {
         <form class="modal-body" id="transaction-form">
           <div class="form-grid">
             <div class="type-switch" role="group" aria-label="Tipo de movimiento">
-              <button type="button" class="type-option active" data-type="income">↓ Dinero que entró</button>
-              <button type="button" class="type-option" data-type="expense">↑ Dinero que salió</button>
+              <button type="button" class="type-option active" data-type="income" aria-pressed="true">↓ Dinero que entró</button>
+              <button type="button" class="type-option" data-type="expense" aria-pressed="false">↑ Dinero que salió</button>
             </div>
             <input type="hidden" name="type" value="income" />
             <div class="field"><label for="tx-amount">¿Cuánto fue?</label><input id="tx-amount" name="amount" type="number" min="0.01" step="0.01" inputmode="decimal" placeholder="Ejemplo: 250" required /></div>
@@ -204,13 +213,21 @@ function bindEvents() {
     if (event.target === backdrop) closeModal(backdrop.id);
   }));
   document.addEventListener('keydown', (event) => {
-    if (event.key === 'Escape') document.querySelectorAll('.modal-backdrop:not([hidden])').forEach((modal) => closeModal(modal.id));
+    const modal = [...document.querySelectorAll('.modal-backdrop:not([hidden])')].at(-1);
+    if (!modal) return;
+    if (event.key === 'Escape') return closeModal(modal.id);
+    if (event.key === 'Tab') trapModalFocus(event, modal);
   });
 }
 
 function changeView(view) {
   state.view = view;
-  document.querySelectorAll('[data-view]').forEach((button) => button.classList.toggle('active', button.dataset.view === view));
+  document.querySelectorAll('[data-view]').forEach((button) => {
+    const selected = button.dataset.view === view;
+    button.classList.toggle('active', selected);
+    if (selected) button.setAttribute('aria-current', 'page');
+    else button.removeAttribute('aria-current');
+  });
   document.querySelectorAll('.view').forEach((section) => section.classList.toggle('active', section.id === `view-${view}`));
   const [title, subtitle] = viewTitles[view];
   document.querySelector('#page-title').textContent = title;
@@ -300,7 +317,8 @@ function renderMovements() {
 }
 
 function filterButton(value, label) {
-  return `<button class="pill ${state.filter === value ? 'active' : ''}" data-filter="${value}">${label}</button>`;
+  const selected = state.filter === value;
+  return `<button class="pill ${selected ? 'active' : ''}" data-filter="${value}" aria-pressed="${selected}">${label}</button>`;
 }
 
 function transactionList(list, actions = false) {
@@ -360,6 +378,7 @@ function renderSettings() {
     </article>
     <article class="panel"><div class="panel-header"><div><h2>Privacidad y control</h2><p>Tú decides qué conservar.</p></div></div>
       <p>Prospería no vende tus datos. La IA recibe únicamente un resumen financiero, no tu correo ni tus notas completas.</p>
+      ${state.session ? '<p class="settings-help">Al borrar tus datos se eliminan tus movimientos y preferencias. Tu acceso por correo seguirá disponible.</p>' : ''}
       <div class="settings-actions"><button class="button danger" id="clear-data">${state.session ? 'Borrar todos mis datos' : 'Borrar datos de este dispositivo'}</button></div>
     </article>
   </div>`;
@@ -385,7 +404,11 @@ function openTransaction(type = 'income', item = null) {
 function selectTransactionType(type, selectedCategory = '') {
   const form = document.querySelector('#transaction-form');
   form.elements.type.value = type;
-  document.querySelectorAll('.type-option').forEach((button) => button.classList.toggle('active', button.dataset.type === type));
+  document.querySelectorAll('.type-option').forEach((button) => {
+    const selected = button.dataset.type === type;
+    button.classList.toggle('active', selected);
+    button.setAttribute('aria-pressed', String(selected));
+  });
   const categories = type === 'income'
     ? ['Ventas', 'Servicios', 'Pedidos', 'Otro ingreso']
     : ['Insumos', 'Servicios', 'Transporte', 'Renta', 'Equipo', 'Gasto personal', 'Otro gasto'];
@@ -431,8 +454,40 @@ function startRealData() {
   state.demo = false; persist(); render(); openTransaction('income');
 }
 
-function openModal(id) { document.querySelector(`#${id}`).hidden = false; document.body.style.overflow = 'hidden'; }
-function closeModal(id) { document.querySelector(`#${id}`).hidden = true; document.body.style.overflow = ''; }
+function openModal(id) {
+  const modal = document.querySelector(`#${id}`);
+  if (!modal) return;
+  modalReturnFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+  modal.hidden = false;
+  document.body.style.overflow = 'hidden';
+}
+
+function closeModal(id) {
+  const modal = document.querySelector(`#${id}`);
+  if (!modal || modal.hidden) return;
+  modal.hidden = true;
+  document.body.style.overflow = '';
+  const returnFocus = modalReturnFocus;
+  modalReturnFocus = null;
+  if (returnFocus?.isConnected) setTimeout(() => returnFocus.focus(), 0);
+}
+
+function trapModalFocus(event, modal) {
+  const focusable = [...modal.querySelectorAll(FOCUSABLE_SELECTOR)]
+    .filter((element) => element.getClientRects().length > 0);
+  if (!focusable.length) return event.preventDefault();
+
+  const first = focusable[0];
+  const last = focusable.at(-1);
+  const focusIsInside = modal.contains(document.activeElement);
+  if (event.shiftKey && (!focusIsInside || document.activeElement === first)) {
+    event.preventDefault();
+    last.focus();
+  } else if (!event.shiftKey && (!focusIsInside || document.activeElement === last)) {
+    event.preventDefault();
+    first.focus();
+  }
+}
 
 async function handleAccount() {
   if (state.session) {
@@ -559,9 +614,11 @@ async function clearAllData() {
 }
 
 let toastTimer;
-function toast(message) {
+function toast(message, { error = false } = {}) {
   const element = document.querySelector('#toast');
+  element.setAttribute('role', error ? 'alert' : 'status');
+  element.setAttribute('aria-live', error ? 'assertive' : 'polite');
   element.textContent = message; element.classList.add('show'); clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => element.classList.remove('show'), 3200);
+  toastTimer = setTimeout(() => element.classList.remove('show'), error ? 6000 : 3200);
 }
-function showError(error) { console.error(error); toast(error?.message || 'Algo salió mal. Inténtalo de nuevo.'); }
+function showError(error) { console.error(error); toast(error?.message || 'Algo salió mal. Inténtalo de nuevo.', { error: true }); }
